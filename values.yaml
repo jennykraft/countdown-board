@@ -1,0 +1,54 @@
+image:
+  tag: "v1.8"
+
+ui:
+  repository: "registry.code.fbi.h-da.de/zerodowntimesynicate/devops/countdown-ui"
+  replicas: 2
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "64Mi"
+    limits:
+      cpu: "200m"
+      memory: "128Mi"
+
+api:
+  repository: "registry.code.fbi.h-da.de/zerodowntimesynicate/devops/countdown-api"
+  resources:
+    requests:
+      cpu: "30m"
+      memory: "64Mi"
+    limits:
+      cpu: "150m"
+      memory: "128Mi"
+
+notifier:
+  repository: "registry.code.fbi.h-da.de/zerodowntimesynicate/devops/countdown-notifier"
+  tag: "v1.8"
+  schedule: "*/5 * * * *"
+  smtp:
+    host: "mailhog"
+    port: 1025
+    user: ""
+    pass: ""
+  resources:
+    requests:
+      cpu: "20m"
+      memory: "64Mi"
+    limits:
+      cpu: "100m"
+      memory: "128Mi"
+
+postgres:
+  repository: "postgres"
+  tag: "16-alpine"
+  storage: "1Gi"
+  password: "changeme"
+  resources: {}
+
+mailhog:
+  repository: "mailhog/mailhog"
+  tag: "latest"
+
+prometheus:
+  scrape: true

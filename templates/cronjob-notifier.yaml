@@ -1,0 +1,44 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: notifier
+spec:
+  schedule: "{{ .Values.notifier.schedule }}"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 1
+      template:
+        metadata:
+          labels:
+            app: notifier
+          annotations:
+            prometheus.io/scrape: "true"
+            prometheus.io/port: "8000"
+        spec:
+          imagePullSecrets:
+            - name: reg-cred
+          restartPolicy: Never
+          serviceAccountName: notifier
+          containers:
+            - name: notifier
+              image: "{{ .Values.notifier.repository }}:{{ .Values.notifier.tag }}"
+              imagePullPolicy: IfNotPresent
+              env:
+                - name: PGHOST
+                  value: "postgres"
+                - name: PGPASS
+                  valueFrom:
+                    secretKeyRef:
+                      name: db-secret
+                      key: password
+                - name: SMTP_HOST
+                  value: "{{ .Values.notifier.smtp.host }}"
+                - name: SMTP_PORT
+                  value: "{{ .Values.notifier.smtp.port }}"
+                - name: SMTP_USER
+                  value: "{{ .Values.notifier.smtp.user }}"
+                - name: SMTP_PASS
+                  value: "{{ .Values.notifier.smtp.pass }}"

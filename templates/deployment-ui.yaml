@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: countdown-ui
+spec:
+  replicas: {{ .Values.ui.replicas }}
+  selector:
+    matchLabels:
+      app: ui
+  template:
+    metadata:
+      labels:
+        app: ui
+      {{- if .Values.prometheus.scrape }}
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9113"
+      {{- end }}
+    spec:
+      imagePullSecrets:
+        - name: reg-cred
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: nginx-conf
+      containers:
+        - name: nginx
+          image: "{{ .Values.ui.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 80
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
+
+        - name: api
+          image: "{{ .Values.api.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DB_HOST
+              value: "postgres"
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: db-secret
+                  key: password
+          ports:
+            - name: api
+              containerPort: 9000
+
+        - name: exporter
+          image: nginx/nginx-prometheus-exporter:1.1.0
+          args:
+            - "-nginx.scrape-uri"
+            - "http://localhost/status"
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: metrics
+              containerPort: 9113
